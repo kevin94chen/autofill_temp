@@ -4,14 +4,14 @@ import configparser
 from time import gmtime, strftime
 
 Timestamp = strftime("%d%b%Y%H%M%S")
-url = 'https://zh.surveymonkey.com/r/EmployeeHealthCheck?fbclid=IwAR1gE86MoL4RoPFxpyigUXuV2HIHfoY9epKwmAqrrIMYl8O_s6Z3O09qqmo'
+url = 'https://www.nanya.com/tw/Page/115/%e5%93%a1%e5%b7%a5%e5%81%a5%e5%ba%b7%e5%9b%9e%e5%a0%b1%e8%a1%a8'
 
 
 def _read_config():
     config = configparser.ConfigParser()
     config.read('info.ini')
 
-    i = config['default']['tsmcID']
+    i = config['default']['ID']
     t = config['default']['tempature']
     if t == "":
         t = "36"
