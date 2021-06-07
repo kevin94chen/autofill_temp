@@ -1,5 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 import configparser
 from time import gmtime, strftime
 
@@ -20,28 +21,43 @@ def _read_config():
 
 
 def main(id, body_temp):
-    radio_btn_agree = driver.find_element_by_id("430334642_2860832437")
-    radio_btn_agree.send_keys(Keys.SPACE)
-    tsmc_id = driver.find_element_by_id("430334639")
-    tsmc_id.send_keys(id)
-    temp_meas_mthd = driver.find_element_by_id("430334644_2860832441")
-    temp_meas_mthd.send_keys(Keys.SPACE)
-    temp = driver.find_element_by_id("430334640")
-    temp.send_keys(body_temp)
-    symptom = driver.find_element_by_id("430334646_2860832447")
-    symptom.send_keys(Keys.SPACE)
-    confirm = driver.find_element_by_id("430334641_2860832427")
-    confirm.send_keys(Keys.SPACE)
-    take_med = driver.find_element_by_id("447437405_2965044714")
-    take_med.send_keys(Keys.SPACE)
+    actions = ActionChains(driver)
+
+    Is_Agree = driver.find_element_by_css_selector("input#IsAgree_Y + label")
+    Is_Agree.click()
+
+    Emp_ID = driver.find_element_by_name("Emp_ID")
+    Emp_ID.send_keys(id)
+
+    Meas_Method = driver.find_element_by_css_selector("input#Meas_Method_Ear + label")
+    Meas_Method.click()
+
+    Temperature = driver.find_element_by_name("Temperature")
+    Temperature.send_keys(body_temp)
+
+    Take_AntFvrMed_N = driver.find_element_by_css_selector("input#Take_AntFvrMed_N + label")
+    Take_AntFvrMed_N.click()
+    IsHighRisk_N = driver.find_element_by_css_selector("input#IsHighRisk_N + label")
+    IsHighRisk_N.click()
+    IsPas7DMedCare_N = driver.find_element_by_css_selector("input#IsPas7DMedCare_N + label")
+    IsPas7DMedCare_N.click()
+    IsPas14DTest_None = driver.find_element_by_css_selector("input#IsPas14DTest_None + label")
+    IsPas14DTest_None.click()
+    IsConfirm_Y = driver.find_element_by_css_selector("input#IsConfirm_Y + label")
+    IsConfirm_Y.click()
 
     assert "No results found." not in driver.page_source  # Debugger
 
 
 def confirm_click():
-    c = '.btn.small.next-button.survey-page-button.user-generated.notranslate'
-    send_btn = driver.find_element_by_css_selector(c)
+    # c = '.btn.small.next-button.survey-page-button.user-generated.notranslate'
+    # send_btn = driver.find_element_by_css_selector(c)
+    send_btn = driver.find_element_by_class_name('btn btn_lightBlueWrap myForm_HealthTemperature_Send')
     send_btn.click()
+
+
+def captcha():
+    pass
 
 
 if __name__ == '__main__':
@@ -54,6 +70,7 @@ if __name__ == '__main__':
 
     # do main task
     main(id, t)
+    captcha()
     confirm_click()
 
 #   driver.get_screenshot_as_file(r'./' + Timestamp + '.png')
