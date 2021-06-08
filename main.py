@@ -1,8 +1,10 @@
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
+# from selenium.webdriver.common.keys import Keys
+# from selenium.webdriver.common.action_chains import ActionChains
 import configparser
 from time import gmtime, strftime
+import pytesseract
+import re
 
 Timestamp = strftime("%d%b%Y%H%M%S")
 url = 'https://www.nanya.com/tw/Page/115/%e5%93%a1%e5%b7%a5%e5%81%a5%e5%ba%b7%e5%9b%9e%e5%a0%b1%e8%a1%a8'
@@ -21,8 +23,6 @@ def _read_config():
 
 
 def main(id, body_temp):
-    actions = ActionChains(driver)
-
     Is_Agree = driver.find_element_by_css_selector("input#IsAgree_Y + label")
     Is_Agree.click()
 
@@ -52,12 +52,20 @@ def main(id, body_temp):
 def confirm_click():
     # c = '.btn.small.next-button.survey-page-button.user-generated.notranslate'
     # send_btn = driver.find_element_by_css_selector(c)
-    send_btn = driver.find_element_by_class_name('btn btn_lightBlueWrap myForm_HealthTemperature_Send')
+    send_btn = driver.find_element_by_xpath('/html/body/div[1]/div[2]/div/div/section/div/form/div/div[11]/button[2]')
     send_btn.click()
 
 
-def captcha():
-    pass
+def captcha(driver):
+    path = r"D:/autofill_temp/captcha.png"
+
+    # Get the location of element on the page Point
+    captcha = driver.find_element_by_id('capt')
+    success = captcha.screenshot(path)
+
+    key = pytesseract.image_to_string(path)
+    txtCaptcha = driver.find_element_by_xpath('//*[@id="txtCaptcha"]')
+    txtCaptcha.send_keys(re.sub("[^0-9]", "", key))
 
 
 if __name__ == '__main__':
@@ -70,11 +78,11 @@ if __name__ == '__main__':
 
     # do main task
     main(id, t)
-    captcha()
+    captcha(driver)
     confirm_click()
 
-#   driver.get_screenshot_as_file(r'./' + Timestamp + '.png')
+    #   driver.get_screenshot_as_file(r'./' + Timestamp + '.png')
 
-#   input("press anything to continue")
+    #   input("press anything to continue")
     # close driver
     driver.close()
