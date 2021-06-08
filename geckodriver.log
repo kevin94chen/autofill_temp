@@ -1028,3 +1028,13 @@ JavaScript error: resource://gre/modules/XULStore.jsm, line 66: Error: Can't fin
 console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
 1623162422795	Marionette	INFO	Listening on port 5958
 1623162423201	Marionette	WARN	TLS certificate errors will be ignored for this session
+1623162568296	mozrunner::runner	INFO	Running command: "C:\\Mozilla Firefox\\firefox.exe" "-marionette" "-foreground" "-no-remote" "-profile" "C:\\Users\\KJC\\AppData\\Local\\Temp\\rust_mozprofilecuw6kD"
+1623162568694	Marionette	INFO	Marionette enabled
+JavaScript error: resource://gre/modules/XULStore.jsm, line 66: Error: Can't find profile directory.
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1623162571027	Marionette	INFO	Listening on port 6033
+1623162571478	Marionette	WARN	TLS certificate errors will be ignored for this session
+1623162582815	Marionette	INFO	Stopped listening on port 6033
+
+###!!! [Child][RunMessage] Error: Channel closing: too late to send/recv, messages will be lost
+
