@@ -1,17 +1,19 @@
 from selenium import webdriver
 # from selenium.webdriver.common.keys import Keys
 # from selenium.webdriver.common.action_chains import ActionChains
-import configparser
-from time import gmtime, strftime
-import pytesseract
-import re
+from selenium.common.exceptions import NoAlertPresentException
+from configparser import ConfigParser
+# from time import gmtime, strftime
+from pytesseract import image_to_string
+from re import sub
+from os import getcwd
 
-Timestamp = strftime("%d%b%Y%H%M%S")
+# Timestamp = strftime("%d%b%Y%H%M%S")
 url = 'https://www.nanya.com/tw/Page/115/%e5%93%a1%e5%b7%a5%e5%81%a5%e5%ba%b7%e5%9b%9e%e5%a0%b1%e8%a1%a8'
 
 
 def _read_config():
-    config = configparser.ConfigParser()
+    config = ConfigParser()
     config.read('info.ini')
 
     i = config['default']['ID']
@@ -49,23 +51,31 @@ def main(id, body_temp):
     assert "No results found." not in driver.page_source  # Debugger
 
 
-def confirm_click():
-    # c = '.btn.small.next-button.survey-page-button.user-generated.notranslate'
-    # send_btn = driver.find_element_by_css_selector(c)
-    send_btn = driver.find_element_by_xpath('/html/body/div[1]/div[2]/div/div/section/div/form/div/div[11]/button[2]')
-    send_btn.click()
-
-
 def captcha(driver):
-    path = r"D:/autofill_temp/captcha.png"
+    path = getcwd() + '\captcha.png'
 
     # Get the location of element on the page Point
     captcha = driver.find_element_by_id('capt')
     success = captcha.screenshot(path)
 
-    key = pytesseract.image_to_string(path)
+    key = image_to_string(path)
     txtCaptcha = driver.find_element_by_xpath('//*[@id="txtCaptcha"]')
-    txtCaptcha.send_keys(re.sub("[^0-9]", "", key))
+    txtCaptcha.send_keys(sub("[^0-9]", "", key))
+
+
+def confirm_click():
+    # c = '.btn.small.next-button.survey-page-button.user-generated.notranslate'
+    # send_btn = driver.find_element_by_css_selector(c)
+    send_btn = driver.find_element_by_xpath('/html/body/div[1]/div[2]/div/div/section/div/form/div/div[11]/button[2]')
+    send_btn.click()
+    try:
+        alert = driver.switch_to.alert
+        alert.accept()
+        print("Warning!\nInput Value Error!")
+    except NoAlertPresentException:
+        pass
+    string = driver.find_element_by_xpath('/html/body/div[1]/div[2]/div/div/section/div/p[1]').text
+    print(string)
 
 
 if __name__ == '__main__':
@@ -86,3 +96,4 @@ if __name__ == '__main__':
     #   input("press anything to continue")
     # close driver
     driver.close()
+    input("Press Any Key To Exit...")
