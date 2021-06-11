@@ -1,3 +1,4 @@
+import sys
 from selenium import webdriver
 # from selenium.webdriver.common.keys import Keys
 # from selenium.webdriver.common.action_chains import ActionChains
@@ -7,6 +8,7 @@ from configparser import ConfigParser
 from pytesseract import image_to_string
 from re import sub
 from os import getcwd
+
 
 # Timestamp = strftime("%d%b%Y%H%M%S")
 url = 'https://www.nanya.com/tw/Page/115/%e5%93%a1%e5%b7%a5%e5%81%a5%e5%ba%b7%e5%9b%9e%e5%a0%b1%e8%a1%a8'
@@ -19,8 +21,8 @@ def _read_config():
     i = config['default']['ID']
     t = config['default']['tempature']
     if t == "":
-        t = "36"
-        print("body temperature is set 36.")
+        t = "36.0"
+        print("body temperature is set 36.0")
     return i, t
 
 
@@ -39,12 +41,18 @@ def main(id, body_temp):
 
     Take_AntFvrMed_N = driver.find_element_by_css_selector("input#Take_AntFvrMed_N + label")
     Take_AntFvrMed_N.click()
+
     IsHighRisk_N = driver.find_element_by_css_selector("input#IsHighRisk_N + label")
     IsHighRisk_N.click()
     IsPas7DMedCare_N = driver.find_element_by_css_selector("input#IsPas7DMedCare_N + label")
     IsPas7DMedCare_N.click()
     IsPas14DTest_None = driver.find_element_by_css_selector("input#IsPas14DTest_None + label")
     IsPas14DTest_None.click()
+
+    IsPas14DTest_None = driver.find_element_by_css_selector("input#IsPas14DTest_None + label")
+    IsPas14DTest_None.click()
+    Agree_RapidTest_Y = driver.find_element_by_css_selector('input#Agree_RapidTest_Y + label')
+    Agree_RapidTest_Y.click()
     IsConfirm_Y = driver.find_element_by_css_selector("input#IsConfirm_Y + label")
     IsConfirm_Y.click()
 
@@ -66,15 +74,22 @@ def captcha(driver):
 def confirm_click():
     # c = '.btn.small.next-button.survey-page-button.user-generated.notranslate'
     # send_btn = driver.find_element_by_css_selector(c)
-    send_btn = driver.find_element_by_xpath('/html/body/div[1]/div[2]/div/div/section/div/form/div/div[11]/button[2]')
-    send_btn.click()
     try:
+        send_btn = driver.find_element_by_css_selector('button.btn_lightBlueWrap:nth-child(2)')
+        send_btn.click()
         alert = driver.switch_to.alert
         alert.accept()
         print("Warning!\nInput Value Error!")
+        input("Press Any Key To Exit...")
+        sys.exit(1)
     except NoAlertPresentException:
         pass
-    string = driver.find_element_by_xpath('/html/body/div[1]/div[2]/div/div/section/div/p[1]').text
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
+        input("Press Any Key To Exit...")
+        sys.exit(1)
+
+    string = driver.find_element_by_css_selector('.about-wrap > p:nth-child(1)').text
     print(string)
 
 
@@ -87,8 +102,14 @@ if __name__ == '__main__':
     driver.get(url)
 
     # do main task
-    main(id, t)
-    captcha(driver)
+    try:
+        main(id, t)
+        captcha(driver)
+    except Exception as e:
+        print(e)
+        input("Press Any Key To Exit...")
+        sys.exit(1)
+
     confirm_click()
 
     #   driver.get_screenshot_as_file(r'./' + Timestamp + '.png')
