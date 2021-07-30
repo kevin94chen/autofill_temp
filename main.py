@@ -1,17 +1,23 @@
+import errno
+import re
 import sys
+import time
+
 from selenium import webdriver
 # from selenium.webdriver.common.keys import Keys
 # from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import NoAlertPresentException
 from configparser import ConfigParser
-# from time import gmtime, strftime
+from time import gmtime, strftime
 from pytesseract import image_to_string
 from re import sub
 from os import getcwd
-
+from os import execv
+import cv2 as cv
 
 # Timestamp = strftime("%d%b%Y%H%M%S")
 url = 'https://www.nanya.com/tw/Page/115/%e5%93%a1%e5%b7%a5%e5%81%a5%e5%ba%b7%e5%9b%9e%e5%a0%b1%e8%a1%a8'
+t_config = '--psm 13 --oem 3 -c tessedit_char_whitelist=0123456789'
 
 
 def _read_config():
@@ -51,8 +57,8 @@ def main(id, body_temp):
 
     IsPas14DTest_None = driver.find_element_by_css_selector("input#IsPas14DTest_None + label")
     IsPas14DTest_None.click()
-    Agree_RapidTest_Y = driver.find_element_by_css_selector('input#Agree_RapidTest_Y + label')
-    Agree_RapidTest_Y.click()
+    # Agree_RapidTest_Y = driver.find_element_by_css_selector('input#Agree_RapidTest_Y + label')
+    # Agree_RapidTest_Y.click()
     IsConfirm_Y = driver.find_element_by_css_selector("input#IsConfirm_Y + label")
     IsConfirm_Y.click()
 
@@ -66,9 +72,10 @@ def captcha(driver):
     captcha = driver.find_element_by_id('capt')
     success = captcha.screenshot(path)
 
-    key = image_to_string(path)
+    key = image_to_string(path, config=t_config)
     txtCaptcha = driver.find_element_by_xpath('//*[@id="txtCaptcha"]')
     txtCaptcha.send_keys(sub("[^0-9]", "", key))
+    print("captcha:" + key)
 
 
 def confirm_click():
@@ -78,19 +85,32 @@ def confirm_click():
         send_btn = driver.find_element_by_css_selector('button.btn_lightBlueWrap:nth-child(2)')
         send_btn.click()
         alert = driver.switch_to.alert
+        print("Warning!Input Value Error!\t" + alert.text )
         alert.accept()
-        print("Warning!\nInput Value Error!")
-        input("Press Any Key To Exit...")
-        sys.exit(1)
+        reset_click()
+        return False
+
+        # input("Press Any Key To Exit...")
+        # sys.exit(1)
     except NoAlertPresentException:
-        pass
+        return True
     except:
         print("Unexpected error:", sys.exc_info()[0])
-        input("Press Any Key To Exit...")
-        sys.exit(1)
+        # input("Press Any Key To Exit...")
+        # sys.exit(1)
 
-    string = driver.find_element_by_css_selector('.about-wrap > p:nth-child(1)').text
-    print(string)
+
+def reset_click():
+    reset_btn = driver.find_element_by_css_selector('button.btn:nth-child(1)')
+    reset_btn.click()
+    print("Reset...\n")
+
+
+def add_timestamp():
+    img = cv.imread("./screenshot.png")
+    cv.putText(img, strftime("%a, %d %b %Y %H:%M:%S", gmtime()), (30, 40),
+               cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 3, cv.LINE_AA)
+    cv.imwrite("./screenshot.png", img)
 
 
 if __name__ == '__main__':
@@ -105,14 +125,22 @@ if __name__ == '__main__':
     try:
         main(id, t)
         captcha(driver)
-    except Exception as e:
-        print(e)
-        input("Press Any Key To Exit...")
-        sys.exit(1)
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
+        input("Pause...")
 
-    confirm_click()
+    if confirm_click() is False:
+        print("\nError! Restart program!!\n")
+        main(id, t)
+        captcha(driver)
+        confirm_click()
+
+    string = driver.find_element_by_xpath("//*[text()='您的員工健康回報表已成功送出，謝謝。']").text
+    print(string)
 
     #   driver.get_screenshot_as_file(r'./' + Timestamp + '.png')
+    driver.save_screenshot("screenshot.png")
+    add_timestamp()
 
     #   input("press anything to continue")
     # close driver
