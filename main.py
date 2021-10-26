@@ -139,7 +139,7 @@ class Filler:
     def exec_success(self):
         string = self.driver.find_element_by_xpath("//*[text()='您的員工健康回報表已成功送出，謝謝。']").text
         print(string)
-        #   driver.get_screenshot_as_file(r'./' + Timestamp + '.png')
+        # driver.get_screenshot_as_file(r'./' + Timestamp + '.png')
         time_stamp = strftime("%a%d%b%Y%H%M", localtime())
         self.driver.save_screenshot("screenshot" + time_stamp + ".png")
 
@@ -156,12 +156,8 @@ def main():
     parser = Parser()
     id_list, temperature = parser.get_config()
 
-    filler_list = []
     for i in id_list:
-        filler_list.append(Filler(i, temperature))
-
-    for f in filler_list:
-        fill(f)
+        fill(Filler(i, temperature))
 
 
 def fill(f):
@@ -179,8 +175,11 @@ def fill(f):
         f.fillbox()
         f.confirm_click()
 
-    # check final execute result
-    f.exec_success()
+    try:
+        # check final execute result
+        f.exec_success()
+    except Exception as e:
+        print("{} not execute success.\n".format(f.id))
 
 
 if __name__ == '__main__':
