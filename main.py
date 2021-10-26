@@ -1,6 +1,5 @@
 import sys
-import numpy as np
-
+from numpy import ones, uint8
 from selenium import webdriver
 from selenium.common.exceptions import NoAlertPresentException
 from configparser import ConfigParser
@@ -9,32 +8,44 @@ from pytesseract import image_to_string
 from re import sub
 from os import getcwd
 import cv2 as cv
+from threading import Thread, Barrier
+import time
+
+
+class Parser:
+    id = []
+    temperature = ""
+
+    def _read_config(self):
+        config = ConfigParser()
+        config.read('info_group.ini')
+
+        self.id = list(config['default']['ID'].split(','))
+        self.temperature = config['default']['tempature']
+        if self.temperature == "":
+            self.temperature = "36.0"
+        print("body temperature is set " + self.temperature)
+
+    def get_config(self):
+        self._read_config()
+        return self.id, self.temperature
 
 
 class Filler:
     url = 'https://www.nanya.com/tw/Page/115/%e5%93%a1%e5%b7%a5%e5%81%a5%e5%ba%b7%e5%9b%9e%e5%a0%b1%e8%a1%a8'
-    driver = webdriver.Firefox()
-    id = ""
-    temperature = ""
     t_config = '--psm 13 --oem 3 -c tessedit_char_whitelist=0123456789'
-    key = ""
 
-    def __init__(self):
-        self._read_config()
+    def __init__(self, id, temp):
+        print("{} filler initial...\n".format(id))
+        self.key = ""
+        self.id = id
+        self.temperature = temp
+
         # initial driver
+        self.driver = webdriver.Firefox()
         self.driver.get(self.url)
+
         self.captcha()
-
-    def _read_config(self):
-        config = ConfigParser()
-        config.read('info.ini')
-
-        self.id = config['default']['ID']
-        self.temperature = config['default']['tempature']
-        if self.temperature == "":
-            self.temperature = "36.0"
-            print("body temperature is set 36.0")
-        # return i, temperature
 
     def fillbox(self):
         is_agree = self.driver.find_element_by_css_selector("input#IsAgree_Y + label")
@@ -65,25 +76,26 @@ class Filler:
         IsConfirm_Y = self.driver.find_element_by_css_selector("input#IsConfirm_Y + label")
         IsConfirm_Y.click()
 
-        txtCaptcha = Filler.driver.find_element_by_xpath('//*[@id="txtCaptcha"]')
-        txtCaptcha.send_keys(sub("[^0-9]", "", self.key))
+        txtCaptcha = self.driver.find_element_by_xpath('//*[@id="txtCaptcha"]')
+        txtCaptcha.send_keys(self.key)
 
         assert "No results found." not in self.driver.page_source  # Debugger
 
     def captcha(self):
-        captcha_path = getcwd() + r"\captcha.png"
+        captcha_path = getcwd() + r"\captcha_{}.png".format(self.id)
 
         # Get the location of element on the page Point
         captcha = self.driver.find_element_by_id('capt')
         success = captcha.screenshot(captcha_path)
         if success is False:
-            print("captcha Capture Error!\n")
+            print("Captcha Capture Error!\n")
 
         # image process
         self.imgProc(captcha_path)
 
         self.key = image_to_string(captcha_path, config=self.t_config)
-        print("captcha:" + self.key)
+        self.key = sub("[^0-9]", "", self.key)  # regex substituted non digit character
+        print("captcha: " + self.key)
 
     def imgProc(self, path):
         # image read by GRAYSCALE mode
@@ -94,7 +106,7 @@ class Filler:
         # thresh = cv.adaptiveThreshold(blur, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 11, 2)
 
         # erosion -> threshold -> dilation
-        kernel = np.ones((3, 3), np.uint8)
+        kernel = ones((3, 3), uint8)
         erosion = cv.erode(im, kernel, iterations=1)
         _, thresh = cv.threshold(erosion, 90, 255, cv.THRESH_BINARY)
         dilation = cv.dilate(thresh, kernel, iterations=1)
@@ -141,27 +153,36 @@ class Filler:
 
 
 def main():
-    # initial Filler object
-    filler = Filler()
+    parser = Parser()
+    id_list, temperature = parser.get_config()
 
+    filler_list = []
+    for i in id_list:
+        filler_list.append(Filler(i, temperature))
+
+    for f in filler_list:
+        fill(f)
+
+
+def fill(f):
+    # initial Filler object
     # do main task
     try:
-        filler.fillbox()
+        f.fillbox()
     except:
         print("Unexpected error:", sys.exc_info()[0])
 
     # if anything goes wrong... do it again!
-    if filler.confirm_click() is False:
-        print("\nError! Restart program!!\n")
-        filler.reset_click()
-        filler.fillbox()
-        filler.confirm_click()
+    if f.confirm_click() is False:
+        print("Error! Restart program!!\n")
+        f.reset_click()
+        f.fillbox()
+        f.confirm_click()
 
     # check final execute result
-    filler.exec_success()
-
+    f.exec_success()
 
 
 if __name__ == '__main__':
     main()
-    input("Press Any Key To Exit...")
+    input("Pause...")
