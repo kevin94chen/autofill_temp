@@ -1,5 +1,5 @@
 import sys
-from numpy import ones, uint8
+import numpy as np
 from selenium import webdriver
 from selenium.common.exceptions import NoAlertPresentException
 from configparser import ConfigParser
@@ -8,8 +8,6 @@ from pytesseract import image_to_string
 from re import sub
 from os import getcwd
 import cv2 as cv
-from threading import Thread, Barrier
-import time
 
 
 class Parser:
@@ -33,7 +31,17 @@ class Parser:
 
 class Filler:
     url = 'https://www.nanya.com/tw/Page/115/%e5%93%a1%e5%b7%a5%e5%81%a5%e5%ba%b7%e5%9b%9e%e5%a0%b1%e8%a1%a8'
-    t_config = '--psm 13 --oem 3 -c tessedit_char_whitelist=0123456789'
+
+    ''' 
+    tesseract config: 
+        --psm <page segmentation method> | --oem <OCR engine mode> | tessedit_char_whitelist | outputbase
+    '''
+    # t_config = '--psm 3 --oem 3 -c tessedit_char_whitelist=0123456789 outputbase digits'
+    t_config = '--psm 3 --oem 3 outputbase digits'
+
+    # Firefox headless option
+    ff_option = webdriver.FirefoxOptions()
+    ff_option.headless = True
 
     def __init__(self, id, temp):
         print("{} filler initial...\n".format(id))
@@ -42,7 +50,7 @@ class Filler:
         self.temperature = temp
 
         # initial driver
-        self.driver = webdriver.Firefox()
+        self.driver = webdriver.Firefox(options=self.ff_option)
         self.driver.get(self.url)
 
         self.captcha()
@@ -106,7 +114,9 @@ class Filler:
         # thresh = cv.adaptiveThreshold(blur, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 11, 2)
 
         # erosion -> threshold -> dilation
-        kernel = ones((3, 3), uint8)
+        kernel = np.ones((3, 3), dtype=np.uint8)
+        # kernel = np.ones((3, 3))
+
         erosion = cv.erode(im, kernel, iterations=1)
         _, thresh = cv.threshold(erosion, 90, 255, cv.THRESH_BINARY)
         dilation = cv.dilate(thresh, kernel, iterations=1)
@@ -137,7 +147,9 @@ class Filler:
         self.captcha()
 
     def exec_success(self):
-        string = self.driver.find_element_by_xpath("//*[text()='您的員工健康回報表已成功送出，謝謝。']").text
+        # string = self.driver.find_element_by_xpath("//*[text()='您的員工健康回報表已成功送出，謝謝。']").text
+        string = self.driver.find_element_by_xpath("/html/body/div[1]/div[2]/div/div/section/div/p[1]").text
+
         print(string)
         # driver.get_screenshot_as_file(r'./' + Timestamp + '.png')
         time_stamp = strftime("%a%d%b%Y%H%M", localtime())
@@ -180,8 +192,10 @@ def fill(f):
         f.exec_success()
     except Exception as e:
         print("{} not execute success.\n".format(f.id))
-
+        fail.append(f.id)
 
 if __name__ == '__main__':
+    fail = []
     main()
+    print("Fail id: {}".format(fail))
     input("Pause...")
