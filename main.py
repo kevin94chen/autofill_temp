@@ -8,6 +8,7 @@ from pytesseract import image_to_string
 from re import sub
 from os import getcwd
 import cv2 as cv
+import LineAPI
 
 
 class Parser:
@@ -39,9 +40,12 @@ class Filler:
     # t_config = '--psm 3 --oem 3 -c tessedit_char_whitelist=0123456789 outputbase digits'
     t_config = '--psm 3 --oem 3 outputbase digits'
 
-    # Firefox headless option
+    # Firefox headless option, optimize scrape performance
     ff_option = webdriver.FirefoxOptions()
     ff_option.headless = True
+    ff_option.add_argument('--log-level=3')
+    ff_option.add_argument('--disable-gpu')
+    ff_option.add_argument('--disable-dev-shm-usage')
 
     def __init__(self, id, temp):
         print("{} filler initial...\n".format(id))
@@ -156,12 +160,17 @@ class Filler:
         self.driver.save_screenshot("screenshot" + time_stamp + ".png")
 
         # add timestamp
-        img = cv.imread("./screenshot" + time_stamp + ".png")
+        img_dir = getcwd() + "./screenshot" + time_stamp + ".png"
+        img = cv.imread(img_dir)
         cv.putText(img, strftime("%a, %d %b %Y %H:%M:%S", localtime()), (30, 40),
                    cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 3, cv.LINE_AA)
-        cv.imwrite("./screenshot" + time_stamp + ".png", img)
+        cv.imwrite(img_dir, img)
 
+        # self.send_msg()
         self.driver.close()
+
+    # def send_msg(self):
+    #     LineAPI.send_to_line(self.id)
 
 
 def main():
@@ -171,8 +180,11 @@ def main():
     for i in id_list:
         fill(Filler(i, temperature))
 
+    # send message
+    LineAPI.send_to_line("{}".format(pass_list))
 
-def fill(f):
+
+def fill(f: Filler):
     # initial Filler object
     # do main task
     try:
@@ -190,12 +202,15 @@ def fill(f):
     try:
         # check final execute result
         f.exec_success()
+        pass_list.append(f.id)
     except Exception as e:
-        print("{} not execute success.\n".format(f.id))
+        print("{} not execute success.\n{}".format(f.id, e))
         fail.append(f.id)
+
 
 if __name__ == '__main__':
     fail = []
+    pass_list = []
     main()
     print("Fail id: {}".format(fail))
     input("Pause...")
